@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#a83ae9"/><stop offset="1" stop-color="#7023ef"/></linearGradient></defs>
+  <rect width="1200" height="630" rx="54" fill="url(#g)"/><circle cx="1090" cy="30" r="270" fill="#fff" opacity=".08"/><circle cx="110" cy="610" r="190" fill="#fff" opacity=".06"/>
+  <text x="84" y="154" fill="#fff" opacity=".72" font-family="Arial,sans-serif" font-size="32" font-weight="700" letter-spacing="8">YARDEN TEAM</text>
+  <text x="84" y="310" fill="#fff" font-family="Arial,sans-serif" font-size="80" font-weight="800">异常协作</text>
+  <text x="84" y="390" fill="#fff" opacity=".84" font-family="Arial,sans-serif" font-size="34">查看现场信息与最新处理状态</text>
+  <rect x="84" y="472" width="278" height="70" rx="35" fill="#fff" opacity=".16"/><text x="126" y="519" fill="#fff" font-family="Arial,sans-serif" font-size="29" font-weight="700">Yarden Mobile</text>
+</svg>

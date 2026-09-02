@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yarden-h5",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "API_BASE_URL": "https://yarden-backend-prod.xiangxizhou188.workers.dev",
+    "FACILITY_NAME": "68-600"
+  },
+  "env": {
+    "staging": {
+      "name": "yarden-h5-staging",
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "API_BASE_URL": "https://yarden-backend-prod.xiangxizhou188.workers.dev",
+        "FACILITY_NAME": "68-600"
+      }
+    },
+    "production": {
+      "name": "yarden-h5-production",
+      "services": [
+        {
+          "binding": "BACKEND",
+          "service": "yarden-backend-prod"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "API_BASE_URL": "https://yarden-backend-prod.xiangxizhou188.workers.dev",
+        "FACILITY_NAME": "68-600"
+      }
+    }
+  }
+}
