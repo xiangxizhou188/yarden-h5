@@ -3,9 +3,14 @@ import { api, ApiError } from './api';
 import { formatDateTime, severityLabels, slotPosition, statusLabel, typeLabels } from './format';
 import { PhotoGallery, PhotoUploader } from './photos';
 import type { Issue, MediaAsset, User } from './types';
+import { InspectionPage } from './InspectionPage';
 
-type Route = { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'unknown' };
+type Route = { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'patrol'; token: string } | { kind: 'inspection'; id: string } | { kind: 'unknown' };
 function currentRoute(): Route {
+  const patrol = location.pathname.match(/^\/p\/([^/]+)\/?$/);
+  if (patrol) return { kind: 'patrol', token: decodeURIComponent(patrol[1]) };
+  const inspection = location.pathname.match(/^\/inspections\/([^/]+)\/?$/);
+  if (inspection) return { kind: 'inspection', id: decodeURIComponent(inspection[1]) };
   const share = location.pathname.match(/^\/s\/([^/]+)\/?$/);
   if (share) return { kind: 'share', token: decodeURIComponent(share[1]) };
   const issue = location.pathname.match(/^\/issues\/([^/]+)\/?$/);
@@ -21,6 +26,7 @@ export function App() {
   if (route.kind === 'unknown') return <StatePage icon="leaf" title="Yarden 异常协作" message="请通过有效的异常分享链接访问。" />;
   if (checkingSession) return <StatePage loading title="正在安全加载" message="正在验证登录状态…" />;
   if (!user) return <LoginPage onLogin={setUser} />;
+  if (route.kind === 'patrol' || route.kind === 'inspection') return <InspectionPage route={route} onLogout={() => api.logout().finally(() => setUser(null))} />;
   return <IssuePage route={route} user={user} onLogout={() => api.logout().finally(() => setUser(null))} />;
 }
 
@@ -39,10 +45,10 @@ function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
     catch (caught) { setError(caught instanceof Error ? caught.message : '登录失败'); }
     finally { setLoading(false); }
   };
-  return <main className="login-shell"><section className="login-card"><div className="brand-mark">Y</div><p className="eyebrow">YARDEN TEAM</p><h1>登录后查看异常</h1><p className="muted">异常信息仅对获得授权的团队成员开放</p><form onSubmit={submit}><label>账号<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="请输入账号" /></label><label>密码<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" /></label>{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={loading || !username.trim() || !password}>{loading ? '正在登录…' : '登录并继续'}</button></form><p className="security-note">🔒 账号验证由 Yarden 安全服务完成</p></section></main>;
+  return <main className="login-shell"><section className="login-card"><div className="brand-mark">Y</div><p className="eyebrow">YARDEN TEAM</p><h1>登录后查看记录</h1><p className="muted">记录仅对获得授权的团队成员开放</p><form onSubmit={submit}><label>账号<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="请输入账号" /></label><label>密码<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" /></label>{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={loading || !username.trim() || !password}>{loading ? '正在登录…' : '登录并继续'}</button></form><p className="security-note">🔒 账号验证由 Yarden 安全服务完成</p></section></main>;
 }
 
-function IssuePage({ route, user, onLogout }: { route: Exclude<Route, { kind: 'unknown' }>; user: User; onLogout: () => void }) {
+function IssuePage({ route, user, onLogout }: { route: Extract<Route, { kind: 'share' | 'issue' }>; user: User; onLogout: () => void }) {
   const [issue, setIssue] = useState<Issue | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

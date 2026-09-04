@@ -43,7 +43,7 @@ export type Issue = {
   attachments?: MediaAsset[];
 };
 
-export type MediaScope = 'ISSUE_REPORT' | 'ISSUE_RESOLUTION';
+export type MediaScope = 'ISSUE_REPORT' | 'ISSUE_RESOLUTION' | 'INSPECTION';
 export type MediaAsset = {
   id: string;
   facilityName: string;

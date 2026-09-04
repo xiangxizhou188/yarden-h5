@@ -77,6 +77,7 @@ async function proxyMedia(request: Request, env: Env, backendPath: string) {
   const method = request.method.toUpperCase();
   const body = method === 'PUT' ? await request.arrayBuffer() : undefined;
   const selectedHeaders = new Headers();
+  selectedHeaders.set('X-Facility-Name', env.FACILITY_NAME);
   for (const name of ['Content-Type', 'X-Entity-Id', 'X-Facility-Name', 'X-File-Name', 'X-File-Size', 'X-Media-Scope']) {
     const value = request.headers.get(name);
     if (value) selectedHeaders.set(name, value);
@@ -133,16 +134,16 @@ async function logout(request: Request, env: Env) {
   return new Response(JSON.stringify({ success: true, data: { loggedOut: true } }), { headers });
 }
 
-async function sharePage(request: Request, env: Env, token: string) {
-  const { payload } = await backend<SharePreview>(env, `/issue-shares/${encodeURIComponent(token)}/preview`);
-  const preview = payload?.success && payload.data ? payload.data : { title: 'Yarden 异常协作', description: '团队异常详情与处理记录', imageUrl: null };
+async function sharePage(request: Request, env: Env, token: string, patrol = false) {
+  const { payload } = await backend<SharePreview>(env, `/${patrol ? 'inspection-shares' : 'issue-shares'}/${encodeURIComponent(token)}/preview`);
+  const preview = payload?.success && payload.data ? payload.data : { title: patrol ? 'Yarden 巡房报告' : 'Yarden 异常协作', description: patrol ? '登录查看巡房检查记录' : '团队异常详情与处理记录', imageUrl: null };
   const assetResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
   const html = await assetResponse.text();
-  const canonical = new URL(`/s/${encodeURIComponent(token)}`, request.url).toString();
+  const canonical = new URL(`/${patrol ? 'p' : 's'}/${encodeURIComponent(token)}`, request.url).toString();
   const image = preview.imageUrl || new URL('/share-logo.png', request.url).toString();
   const metas = `<meta property="og:type" content="website"><meta property="og:title" content="${safeText(preview.title)}"><meta property="og:description" content="${safeText(preview.description)}"><meta property="og:image" content="${safeText(image)}"><meta property="og:url" content="${safeText(canonical)}"><meta name="twitter:card" content="summary_large_image">`;
   const output = html.replace(/<title>.*?<\/title>/, `<title>${safeText(preview.title)}</title>${metas}`);
-  return new Response(output, { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'public, max-age=60, s-maxage=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' } });
+  return new Response(output, { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': patrol ? 'private, no-store' : 'public, max-age=60, s-maxage=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
 }
 
 export default {
@@ -154,6 +155,11 @@ export default {
       if (url.pathname === '/api/auth/login' && method === 'POST') return await login(request, env);
       if (url.pathname === '/api/auth/logout' && method === 'POST') return await logout(request, env);
       if (url.pathname === '/api/session' && method === 'GET') return await proxyAuthenticated(request, env, '/auth/me');
+      const patrolApi = url.pathname.match(/^\/api\/(inspection-shares|inspections)\/([^/]+)$/);
+      if (patrolApi && method === 'GET') return await proxyAuthenticated(request, env, `/${patrolApi[1]}/${encodeURIComponent(patrolApi[2])}`);
+      const patrolPage = url.pathname.match(/^\/p\/([^/]+)\/?$/);
+      if (patrolPage && method === 'GET') return await sharePage(request, env, patrolPage[1], true);
+      if (method === 'GET' && /^\/inspections\/[^/]+\/?$/.test(url.pathname)) return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
       if (url.pathname === '/api/media' && method === 'PUT') return await proxyMedia(request, env, '/media');
       const mediaContent = url.pathname.match(/^\/api\/media\/([^/]+)\/content$/);
       if (mediaContent && method === 'GET') return await proxyMedia(request, env, `/media/${encodeURIComponent(mediaContent[1])}/content`);

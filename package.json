@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "check": "npm run typecheck && npm run lint && npm run test",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:fonts",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "npm run build && wrangler dev",
     "deploy:staging": "npm run build && wrangler deploy --env staging",
     "deploy:production": "npm run build && wrangler deploy --env production",
-    "cf-typegen": "wrangler types worker-configuration.d.ts"
+    "cf-typegen": "wrangler types worker-configuration.d.ts",
+    "check:fonts": "node scripts/check-ui-fonts.cjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -23,14 +24,12 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
-    "@rolldown/binding-darwin-arm64": "^1.2.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "eslint": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
-    "lightningcss-darwin-arm64": "^1.33.0",
     "typescript": "latest",
     "typescript-eslint": "latest",
     "vitest": "latest",

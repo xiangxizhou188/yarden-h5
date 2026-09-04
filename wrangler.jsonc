@@ -15,7 +15,7 @@
   },
   "vars": {
     "ENVIRONMENT": "development",
-    "API_BASE_URL": "https://yarden-backend-prod.xiangxizhou188.workers.dev",
+    "API_BASE_URL": "http://localhost:8787",
     "FACILITY_NAME": "68-600"
   },
   "env": {

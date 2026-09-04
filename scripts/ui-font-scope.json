@@ -1,0 +1,7 @@
+[
+  "src/App.tsx",
+  "src/InspectionPage.tsx",
+  "src/api.ts",
+  "src/patrol.css",
+  "src/types.ts"
+]
