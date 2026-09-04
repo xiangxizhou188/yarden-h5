@@ -1,4 +1,4 @@
-export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'ARCHIVED';
 export type IssueSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type TargetSlot = {
@@ -33,6 +33,7 @@ export type Issue = {
   actionTaken: string | null;
   reportedBy: string | null;
   handledBy: string | null;
+  metadata?: { archive?: { reason: string; at: string } } | null;
   reportedAt: string;
   handledAt: string | null;
   room: { id: string; name: string } | null;

@@ -11,7 +11,7 @@ export function formatDateTime(value?: string | null) {
 }
 
 export function statusLabel(status: Issue['issueStatus']) {
-  return status === 'OPEN' ? '待处理' : status === 'IN_PROGRESS' ? '处理中' : '已处理';
+  return status === 'ARCHIVED' ? '已归档' : status === 'OPEN' ? '待处理' : status === 'IN_PROGRESS' ? '处理中' : '已处理';
 }
 
 export function slotPosition(slot: TargetSlot) {
