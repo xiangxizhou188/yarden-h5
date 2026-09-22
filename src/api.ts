@@ -1,4 +1,4 @@
-import type { ApiResult, Issue, MediaAsset, MediaScope, User } from './types';
+import type { ApiResult, Issue, MediaAsset, MediaScope, NurseryMoveInPlan, User } from './types';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -25,6 +25,7 @@ export const api = {
   logout: () => request<{ loggedOut: true }>('/api/auth/logout', { method: 'POST' }),
   issue: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}`),
   sharedIssue: (token: string) => request<Issue>(`/api/shares/${encodeURIComponent(token)}`),
+  nurseryPlan: (token: string) => request<NurseryMoveInPlan>(`/api/nursery-shares/${encodeURIComponent(token)}`),
   acknowledge: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}/acknowledge`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() } }),
   resolve: (id: string, resolutionDescription: string, attachments: MediaAsset[]) => request<Issue>(`/api/issues/${encodeURIComponent(id)}/resolve`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ resolutionDescription, attachments }) }),
   createShare: (id: string) => request<{ url: string }>(`/api/issues/${encodeURIComponent(id)}/share`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() } }),

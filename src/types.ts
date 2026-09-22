@@ -60,3 +60,13 @@ export type MediaAsset = {
 
 export type User = { id: string; username: string; facilityName: string; role: string };
 export type ApiResult<T> = { success: boolean; data?: T; message?: string };
+
+export type NurseryMoveInPlan = {
+  title: string;
+  rangeDays: number;
+  generatedAt: string;
+  expiresAt: string | null;
+  roomCount: number;
+  totalQuantity: number;
+  items: { id: string; roomName: string; moveInDate: string; weekDay: string; quantity: number }[];
+};

@@ -4,9 +4,12 @@ import { formatDateTime, severityLabels, slotPosition, statusLabel, typeLabels }
 import { PhotoGallery, PhotoUploader } from './photos';
 import type { Issue, MediaAsset, User } from './types';
 import { InspectionPage } from './InspectionPage';
+import { NurseryPlanPage } from './NurseryPlanPage';
 
-type Route = { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'patrol'; token: string } | { kind: 'inspection'; id: string } | { kind: 'unknown' };
+type Route = { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'patrol'; token: string } | { kind: 'nursery'; token: string } | { kind: 'inspection'; id: string } | { kind: 'unknown' };
 function currentRoute(): Route {
+  const nursery = location.pathname.match(/^\/nursery\/([^/]+)\/?$/);
+  if (nursery) return { kind: 'nursery', token: decodeURIComponent(nursery[1]) };
   const patrol = location.pathname.match(/^\/p\/([^/]+)\/?$/);
   if (patrol) return { kind: 'patrol', token: decodeURIComponent(patrol[1]) };
   const inspection = location.pathname.match(/^\/inspections\/([^/]+)\/?$/);
@@ -23,6 +26,7 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   useEffect(() => { api.session().then(setUser).catch(() => setUser(null)).finally(() => setCheckingSession(false)); }, []);
+  if (route.kind === 'nursery') return <NurseryPlanPage token={route.token} />;
   if (route.kind === 'unknown') return <StatePage icon="leaf" title="Yarden 异常协作" message="请通过有效的异常分享链接访问。" />;
   if (checkingSession) return <StatePage loading title="正在安全加载" message="正在验证登录状态…" />;
   if (!user) return <LoginPage onLogin={setUser} />;

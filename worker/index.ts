@@ -146,6 +146,17 @@ async function sharePage(request: Request, env: Env, token: string, patrol = fal
   return new Response(output, { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': patrol ? 'private, no-store' : 'public, max-age=60, s-maxage=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
 }
 
+async function nurseryPage(request: Request, env: Env, token: string) {
+  const { payload } = await backend<SharePreview>(env, `/nursery-move-in-plan/shares/${encodeURIComponent(token)}/preview`);
+  const preview = payload?.success && payload.data ? payload.data : { title: '御花园 · 苗场供苗计划', description: '查看最新进树日期与供苗数量', imageUrl: null };
+  const assetResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+  const html = await assetResponse.text();
+  const canonical = new URL(`/nursery/${encodeURIComponent(token)}`, request.url).toString();
+  const image = preview.imageUrl || new URL('/share-logo.png', request.url).toString();
+  const metas = `<meta property="og:type" content="website"><meta property="og:title" content="${safeText(preview.title)}"><meta property="og:description" content="${safeText(preview.description)}"><meta property="og:image" content="${safeText(image)}"><meta property="og:url" content="${safeText(canonical)}"><meta name="twitter:card" content="summary_large_image">`;
+  return new Response(html.replace(/<title>.*?<\/title>/, `<title>${safeText(preview.title)}</title>${metas}`), { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'public, max-age=60, s-maxage=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
+}
+
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
@@ -155,6 +166,13 @@ export default {
       if (url.pathname === '/api/auth/login' && method === 'POST') return await login(request, env);
       if (url.pathname === '/api/auth/logout' && method === 'POST') return await logout(request, env);
       if (url.pathname === '/api/session' && method === 'GET') return await proxyAuthenticated(request, env, '/auth/me');
+      const nurseryApi = url.pathname.match(/^\/api\/nursery-shares\/([^/]+)$/);
+      if (nurseryApi && method === 'GET') {
+        const result = await backend(env, `/nursery-move-in-plan/shares/${encodeURIComponent(nurseryApi[1])}`);
+        return json(result.payload ?? { success: false, message: '计划服务暂时不可用' }, result.response.status, { 'Cache-Control': 'no-store' });
+      }
+      const nurseryPageMatch = url.pathname.match(/^\/nursery\/([^/]+)\/?$/);
+      if (nurseryPageMatch && method === 'GET') return await nurseryPage(request, env, nurseryPageMatch[1]);
       const patrolApi = url.pathname.match(/^\/api\/(inspection-shares|inspections)\/([^/]+)$/);
       if (patrolApi && method === 'GET') return await proxyAuthenticated(request, env, `/${patrolApi[1]}/${encodeURIComponent(patrolApi[2])}`);
       const patrolPage = url.pathname.match(/^\/p\/([^/]+)\/?$/);
