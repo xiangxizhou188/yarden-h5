@@ -7,6 +7,10 @@ function dateLabel(value: string) {
   return `${year}/${month}/${day}`;
 }
 
+function distanceLabel(daysAway: number) {
+  return daysAway === 0 ? '今天' : `${daysAway}天`;
+}
+
 export function NurseryPlanPage({ token }: { token: string }) {
   const [plan, setPlan] = useState<NurseryMoveInPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,11 +44,11 @@ export function NurseryPlanPage({ token }: { token: string }) {
     <section className="nursery-content">
       <div className="nursery-heading"><div><h2>未来进树计划</h2><p>日期或数量调整后，本页面自动同步</p></div><button aria-label="刷新计划" onClick={() => void load()}>↻</button></div>
       <div className="nursery-table">
-        <div className="nursery-row nursery-table-head"><span>房间</span><span>计划进树日期</span><span>星期</span><span>数量</span></div>
-        {plan.items.map((item) => <div className="nursery-row" key={item.id}><strong>{item.roomName}</strong><span>{dateLabel(item.moveInDate)}</span><span>{item.weekDay}</span><b>{item.quantity}<small> 株</small></b></div>)}
+        <div className="nursery-row nursery-table-head"><span>房间</span><span>计划进树日期</span><span>距今</span><span>数量</span></div>
+        {plan.items.map((item) => <div className="nursery-row" key={item.id}><strong>{item.roomName}</strong><span>{dateLabel(item.moveInDate)}</span><span>{distanceLabel(item.daysAway)}</span><b>{item.quantity}<small> 株</small></b></div>)}
         {!plan.items.length ? <div className="nursery-empty">未来 {plan.rangeDays} 天暂无进树计划</div> : null}
       </div>
-      <p className="nursery-note">数量为房间当前批次正常植株数，备用株不计入供苗计划。</p>
+      <p className="nursery-note">数量为房间当前批次总株数，包含正常株和备用株。</p>
       <p className="nursery-updated">更新于 {new Date(plan.generatedAt).toLocaleString('zh-CN', { timeZone: 'America/Los_Angeles', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
     </section>
   </main>;

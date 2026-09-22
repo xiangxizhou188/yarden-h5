@@ -68,5 +68,5 @@ export type NurseryMoveInPlan = {
   expiresAt: string | null;
   roomCount: number;
   totalQuantity: number;
-  items: { id: string; roomName: string; moveInDate: string; weekDay: string; quantity: number }[];
+  items: { id: string; roomName: string; moveInDate: string; daysAway: number; quantity: number }[];
 };
