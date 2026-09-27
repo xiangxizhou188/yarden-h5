@@ -46,6 +46,34 @@ async function backend<T>(env: Env, path: string, init: RequestInit = {}, access
   return { response, payload };
 }
 
+function rewriteSharedMedia(value: unknown, kind: 'issue' | 'inspection', token: string, seen = new WeakSet<object>()): unknown {
+  if (!value || typeof value !== 'object' || seen.has(value as object)) return value;
+  seen.add(value as object);
+  if (Array.isArray(value)) return value.map(item => rewriteSharedMedia(item, kind, token, seen));
+  const source = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(source)) result[key] = rewriteSharedMedia(child, kind, token, seen);
+  if (typeof source.id === 'string' && (String(source.url || '').startsWith('/media/') || String(source.thumbnailUrl || '').startsWith('/media/'))) {
+    const path = `/share-media/${kind}/${encodeURIComponent(token)}/${encodeURIComponent(source.id)}/content`;
+    result.url = path;
+    result.thumbnailUrl = path;
+  }
+  return result;
+}
+
+async function proxyPublicMedia(env: Env, backendPath: string) {
+  const backendFetcher = 'BACKEND' in env && env.BACKEND ? env.BACKEND : globalThis;
+  const response = await backendFetcher.fetch(`${env.API_BASE_URL.replace(/\/+$/, '')}${backendPath}`, { headers: { Accept: 'image/*' } });
+  const headers = new Headers();
+  for (const name of ['Content-Type', 'Content-Length', 'ETag', 'Content-Security-Policy']) {
+    const value = response.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  headers.set('Cache-Control', 'private, no-store');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  return new Response(response.body, { status: response.status, headers });
+}
+
 async function proxyAuthenticated(request: Request, env: Env, backendPath: string, method = 'GET', bodyOverride?: string) {
   const stored = cookies(request);
   let accessToken = stored[ACCESS_COOKIE];
@@ -136,7 +164,7 @@ async function logout(request: Request, env: Env) {
 
 async function sharePage(request: Request, env: Env, token: string, patrol = false) {
   const { payload } = await backend<SharePreview>(env, `/${patrol ? 'inspection-shares' : 'issue-shares'}/${encodeURIComponent(token)}/preview`);
-  const preview = payload?.success && payload.data ? payload.data : { title: patrol ? 'Yarden 巡房报告' : 'Yarden 异常协作', description: patrol ? '登录查看巡房检查记录' : '团队异常详情与处理记录', imageUrl: null };
+  const preview = payload?.success && payload.data ? payload.data : { title: patrol ? 'Yarden 巡房报告' : 'Yarden 异常协作', description: patrol ? '查看巡房检查记录与现场照片' : '团队异常详情与处理记录', imageUrl: null };
   const assetResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
   const html = await assetResponse.text();
   const canonical = new URL(`/${patrol ? 'p' : 's'}/${encodeURIComponent(token)}`, request.url).toString();
@@ -174,17 +202,28 @@ export default {
       const nurseryPageMatch = url.pathname.match(/^\/nursery\/([^/]+)\/?$/);
       if (nurseryPageMatch && method === 'GET') return await nurseryPage(request, env, nurseryPageMatch[1]);
       const patrolApi = url.pathname.match(/^\/api\/(inspection-shares|inspections)\/([^/]+)$/);
-      if (patrolApi && method === 'GET') return await proxyAuthenticated(request, env, `/${patrolApi[1]}/${encodeURIComponent(patrolApi[2])}`);
+      if (patrolApi && method === 'GET') {
+        if (patrolApi[1] === 'inspections') return await proxyAuthenticated(request, env, `/inspections/${encodeURIComponent(patrolApi[2])}`);
+        const result = await backend(env, `/inspection-shares/${encodeURIComponent(patrolApi[2])}`);
+        const payload = result.payload ? rewriteSharedMedia(result.payload, 'inspection', patrolApi[2]) : { success: false, message: '分享服务暂时不可用' };
+        return json(payload, result.response.status, { 'Cache-Control': 'private, no-store' });
+      }
       const patrolPage = url.pathname.match(/^\/p\/([^/]+)\/?$/);
       if (patrolPage && method === 'GET') return await sharePage(request, env, patrolPage[1], true);
       if (method === 'GET' && /^\/inspections\/[^/]+\/?$/.test(url.pathname)) return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
       if (url.pathname === '/api/media' && method === 'PUT') return await proxyMedia(request, env, '/media');
       const mediaContent = url.pathname.match(/^\/api\/media\/([^/]+)\/content$/);
       if (mediaContent && method === 'GET') return await proxyMedia(request, env, `/media/${encodeURIComponent(mediaContent[1])}/content`);
+      const publicMedia = url.pathname.match(/^\/api\/share-media\/(issue|inspection)\/([^/]+)\/([^/]+)\/content$/);
+      if (publicMedia && method === 'GET') return await proxyPublicMedia(env, `/${publicMedia[1]}-shares/${encodeURIComponent(publicMedia[2])}/media/${encodeURIComponent(publicMedia[3])}/content`);
       const mediaAsset = url.pathname.match(/^\/api\/media\/([^/]+)$/);
       if (mediaAsset && method === 'DELETE') return await proxyMedia(request, env, `/media/${encodeURIComponent(mediaAsset[1])}`);
       const sharedApi = url.pathname.match(/^\/api\/shares\/([^/]+)$/);
-      if (sharedApi && method === 'GET') return await proxyAuthenticated(request, env, `/issue-shares/${encodeURIComponent(sharedApi[1])}`);
+      if (sharedApi && method === 'GET') {
+        const result = await backend(env, `/issue-shares/${encodeURIComponent(sharedApi[1])}`);
+        const payload = result.payload ? rewriteSharedMedia(result.payload, 'issue', sharedApi[1]) : { success: false, message: '分享服务暂时不可用' };
+        return json(payload, result.response.status, { 'Cache-Control': 'private, no-store' });
+      }
       const issueApi = url.pathname.match(/^\/api\/issues\/([^/]+)(?:\/(acknowledge|resolve|share))?$/);
       if (issueApi) {
         const id = encodeURIComponent(issueApi[1]); const action = issueApi[2];

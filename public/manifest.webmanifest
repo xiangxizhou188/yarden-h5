@@ -1,0 +1,19 @@
+{
+  "name": "御花园",
+  "short_name": "御花园",
+  "description": "御花园种植管理与协作",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F5FA",
+  "theme_color": "#F7F5FA",
+  "icons": [
+    {
+      "src": "/yarden-app-icon.png",
+      "sizes": "1200x1200",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

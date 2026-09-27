@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import type { NurseryMoveInPlan } from './types';
+import './nursery-share.css';
 
 function dateLabel(value: string) {
   const [year, month, day] = value.split('-');
@@ -23,11 +24,23 @@ export function NurseryPlanPage({ token }: { token: string }) {
   }, [token]);
   useEffect(() => {
     let active = true;
-    api.nurseryPlan(token)
-      .then((result) => { if (active) setPlan(result); })
-      .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : '进树计划加载失败'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    const refresh = () => {
+      api.nurseryPlan(token)
+        .then((result) => { if (active) { setPlan(result); setError(''); } })
+        .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : '进树计划加载失败'); })
+        .finally(() => { if (active) setLoading(false); });
+    };
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    refresh();
+    const timer = window.setInterval(refreshWhenVisible, 30_000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('pageshow', refresh);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('pageshow', refresh);
+    };
   }, [token]);
 
   if (loading) return <main className="nursery-state"><div className="nursery-loader" /><h1>正在同步最新计划</h1><p>收获日期和数量调整会自动更新</p></main>;
@@ -35,11 +48,20 @@ export function NurseryPlanPage({ token }: { token: string }) {
 
   return <main className="nursery-page">
     <header className="nursery-hero">
-      <div className="nursery-brand"><span>Y</span><div><strong>御花园</strong><small>苗场供苗计划</small></div></div>
-      <div className="nursery-live"><i />实时计划</div>
-      <h1>未来 {plan.rangeDays} 天<br />进树安排</h1>
-      <p>计划收获后的第二天进树</p>
-      <div className="nursery-summary"><div><b>{plan.roomCount}</b><span>房间</span></div><div><b>{plan.totalQuantity}</b><span>总株数</span></div></div>
+      <div className="nursery-hero-inner">
+        <div className="nursery-hero-top">
+          <div className="nursery-brand"><img src="/yarden-brand-logo.png" alt="" /><div><strong>{plan.facilityName}</strong><small>Facility</small></div></div>
+          <div className="nursery-live"><i />实时计划</div>
+        </div>
+        <div className="nursery-hero-copy">
+          <h1>未来 {plan.rangeDays} 天进树安排</h1>
+          <p>计划收获次日进树，日期与数量实时同步</p>
+        </div>
+        <div className="nursery-summary">
+          <div><span>计划房间</span><b>{plan.roomCount}</b><small>间</small></div>
+          <div><span>预计供苗</span><b>{plan.totalQuantity.toLocaleString('zh-CN')}</b><small>株</small></div>
+        </div>
+      </div>
     </header>
     <section className="nursery-content">
       <div className="nursery-heading"><div><h2>未来进树计划</h2><p>日期或数量调整后，本页面自动同步</p></div><button aria-label="刷新计划" onClick={() => void load()}>↻</button></div>

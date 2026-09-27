@@ -63,6 +63,7 @@ export type ApiResult<T> = { success: boolean; data?: T; message?: string };
 
 export type NurseryMoveInPlan = {
   title: string;
+  facilityName: string;
   rangeDays: number;
   generatedAt: string;
   expiresAt: string | null;

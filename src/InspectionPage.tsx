@@ -21,7 +21,7 @@ type Report = {
 type FollowUp = { needsAttention: boolean; findings: { key: string; title: string; status: string; issueStatus?: string | null; note: string | null; issueId: string | null }[]; timeline: { id: string; title: string; at: string; actorName: string; note?: string | null }[] };
 type Inspection = { followUp?: FollowUp | null; id: string; report: Report | null; inspectorName: string; recordedAt: string; attachments: MediaAsset[]; room: { name: string }; batch: { name: string } | null };
 
-export function InspectionPage({ route, onLogout }: { route: { kind: 'patrol'; token: string } | { kind: 'inspection'; id: string }; onLogout: () => void }) {
+export function InspectionPage({ route, onLogout }: { route: { kind: 'patrol'; token: string } | { kind: 'inspection'; id: string }; onLogout?: () => void }) {
   const [record, setRecord] = useState<Inspection | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -31,10 +31,10 @@ export function InspectionPage({ route, onLogout }: { route: { kind: 'patrol'; t
     request<Inspection>(path).then(data => { if (active) setRecord(data); }).catch(cause => { if (active) setError(cause.message); });
     return () => { active = false; };
   }, [route, attempt]);
-  if (!record) return <main className="state-page"><div className="brand-mark">Y</div><h1>{error ? '无法查看报告' : '正在加载巡房报告'}</h1><p>{error || '正在读取检查记录与现场照片…'}</p>{error && <button className="primary-button" onClick={() => { setError(''); setAttempt(n => n + 1); }}>重新加载</button>}<button className="patrol-link" onClick={onLogout}>切换账号</button></main>;
+  if (!record) return <main className="state-page"><div className="brand-mark"><img src="/yarden-brand-logo.png" alt="御花园" /></div><h1>{error ? '无法查看报告' : '正在加载巡房报告'}</h1><p>{error || '正在读取检查记录与现场照片…'}</p>{error && <button className="primary-button" onClick={() => { setError(''); setAttempt(n => n + 1); }}>重新加载</button>}{onLogout && <button className="patrol-link" onClick={onLogout}>切换账号</button>}</main>;
   const report = record.report;
   const needsAttention = record.followUp?.needsAttention ?? report?.needsAttention;
-  return <main className="patrol-page"><header className="patrol-header"><div><strong>巡房报告</strong><small>YARDEN · 团队巡房记录</small></div><button className="patrol-link" onClick={onLogout}>退出</button></header>
+  return <main className="patrol-page"><header className="patrol-header"><div><strong>巡房报告</strong><small>YARDEN · 团队巡房记录</small></div>{onLogout ? <button className="patrol-link" onClick={onLogout}>退出</button> : <span className="patrol-link">分享只读</span>}</header>
     <section className="patrol-hero"><span>{report?.businessDate || formatDateTime(record.recordedAt)} · {report ? (report.initialRequired ? '首次巡房' : '日常巡房') : '巡房记录'}</span><h1>{record.room.name}</h1><p>{record.batch?.name || '历史巡房'}</p><strong>{needsAttention ? '已完成 · 有待关注项' : '已完成'}</strong><div>{record.inspectorName} · {formatDateTime(report?.completedAt || record.recordedAt)}</div></section>
     {report ? <><div className={needsAttention ? 'patrol-notice warning' : 'patrol-notice'}>{needsAttention ? '巡房发现待关注项，请查看下方处理记录。' : record.followUp?.findings.length ? '巡房关注项已处理，原始检查结果与处理过程保留如下。' : '本次检查已全部确认完成。'}{report.initialRequired && ' 已包含本批次初始检查。'}</div>
       {record.followUp?.findings.map(item => <section className="patrol-card" key={item.key}><h2>{item.title}</h2><p>{item.issueStatus === 'ARCHIVED' ? '已归档' : item.status === 'RESOLVED' ? '已解决' : item.status === 'REPORTED' ? '已上报异常 · 处理中' : '待关注'}</p>{item.note && <p>{item.note}</p>}{item.issueId && <small>已关联异常单</small>}</section>)}

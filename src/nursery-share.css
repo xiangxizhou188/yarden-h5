@@ -1,0 +1,143 @@
+/* Compact public plan header. Scoped selectors intentionally override the legacy
+   shared-page rules without affecting inspection or patrol pages. */
+.nursery-page .nursery-hero {
+  padding: 18px 18px 20px;
+  border-radius: 0 0 24px 24px;
+  background: linear-gradient(125deg, #159f9a 0%, #3475c7 54%, #6828d9 100%);
+  box-shadow: 0 10px 28px rgba(68, 50, 151, 0.16);
+}
+
+.nursery-hero-inner {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.nursery-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nursery-page .nursery-brand {
+  gap: 9px;
+}
+
+.nursery-page .nursery-brand > img {
+  width: 36px;
+  height: 36px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.92);
+  object-fit: contain;
+}
+
+.nursery-page .nursery-brand strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+}
+
+.nursery-page .nursery-brand small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 14px;
+  opacity: 0.58;
+}
+
+.nursery-page .nursery-live {
+  float: none;
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  font-size: 12px;
+}
+
+.nursery-hero-copy {
+  margin-top: 20px;
+}
+
+.nursery-page .nursery-hero h1 {
+  margin: 0;
+  font-size: clamp(25px, 7vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.nursery-page .nursery-hero p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.nursery-page .nursery-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+}
+
+.nursery-page .nursery-summary div {
+  width: auto;
+  min-width: 0;
+  min-height: 48px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.11);
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.nursery-page .nursery-summary div + div {
+  border-left: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.nursery-page .nursery-summary span {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.nursery-page .nursery-summary b {
+  overflow: hidden;
+  font-size: 20px;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nursery-page .nursery-summary small {
+  margin-left: 3px;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.nursery-page .nursery-content {
+  padding-top: 18px;
+}
+
+@media (max-width: 430px) {
+  .nursery-page .nursery-hero {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .nursery-page .nursery-hero h1 {
+    font-size: 26px;
+  }
+}
