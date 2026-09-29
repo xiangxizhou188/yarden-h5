@@ -193,6 +193,10 @@ export default {
       if (method !== 'GET' && !requestOriginIsAllowed(request)) return json({ success: false, message: '请求来源无效' }, 403);
       if (url.pathname === '/api/auth/login' && method === 'POST') return await login(request, env);
       if (url.pathname === '/api/auth/logout' && method === 'POST') return await logout(request, env);
+      if (url.pathname === '/api/care-formulas' && method === 'GET') {
+        const query = new URLSearchParams({ category: 'SPRAY', facilityName: url.searchParams.get('facilityName') || '' });
+        return await proxyAuthenticated(request, env, `/care-formulas?${query}`);
+      }
       if (url.pathname === '/api/session' && method === 'GET') return await proxyAuthenticated(request, env, '/auth/me');
       const nurseryApi = url.pathname.match(/^\/api\/nursery-shares\/([^/]+)$/);
       if (nurseryApi && method === 'GET') {

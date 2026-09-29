@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slotPosition, statusLabel } from './format';
+import { formatBatchStartDate, slotPosition, statusLabel } from './format';
 
 describe('issue formatting', () => {
   it('translates workflow statuses', () => {
@@ -11,5 +11,17 @@ describe('issue formatting', () => {
   it('formats plant coordinates consistently with the mobile app', () => {
     expect(slotPosition({ id: '1', columnNumber: 2, rowNumber: 3, slotCode: null, slotNumber: null, varietyName: null, plantStatus: null })).toBe('B3');
     expect(slotPosition({ id: '2', columnNumber: null, rowNumber: null, slotCode: 'C-12', slotNumber: null, varietyName: null, plantStatus: null })).toBe('C-12');
+  });
+});
+
+describe('batch move-in date', () => {
+  it('preserves date-only and UTC-midnight dates', () => {
+    expect(formatBatchStartDate('2026-07-31')).toBe('2026/7/31');
+    expect(formatBatchStartDate('2026-07-31T00:00:00Z')).toBe('2026/7/31');
+  });
+  it('does not invent an invalid or missing date', () => {
+    expect(formatBatchStartDate(null)).toBe('未记录');
+    expect(formatBatchStartDate('2026-02-30')).toBe('未记录');
+    expect(formatBatchStartDate('bad')).toBe('未记录');
   });
 });

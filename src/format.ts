@@ -18,3 +18,12 @@ export function slotPosition(slot: TargetSlot) {
   if (slot.columnNumber && slot.rowNumber) return `${String.fromCharCode(64 + slot.columnNumber)}${slot.rowNumber}`;
   return slot.slotCode || (slot.slotNumber ? `#${slot.slotNumber}` : '位置未记录');
 }
+
+// Batch start dates are calendar dates; UTC formatting avoids shifting midnight back a day.
+export function formatBatchStartDate(value?: string | null) {
+  const dateKey = value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (!dateKey) return '未记录';
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateKey) return '未记录';
+  return new Intl.DateTimeFormat('zh-CN', { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' }).format(date);
+}

@@ -15,11 +15,13 @@ export type TargetContext = {
   source: 'SNAPSHOT' | 'CURRENT';
   capturedAt: string | null;
   room: { id: string; name: string | null; facilityName: string | null } | null;
-  batch: { id: string; name: string | null; strainName: string | null; status: string | null } | null;
+  batch: { id: string; name: string | null; strainName: string | null; startDate?: string | null; status: string | null } | null;
   device: { id: string; name: string | null; type: string | null; status: string | null } | null;
   table: { id: string; name: string | null; roomId: string | null } | null;
   slots: TargetSlot[];
 };
+
+export type PestFormula = { id:string; name:string; version:number; isActive?:boolean; sprayUsageType?:string|null; sprayIngredients?:{name:string;amount:number;unit:string}[] };
 
 export type Issue = {
   id: string;
@@ -33,11 +35,11 @@ export type Issue = {
   actionTaken: string | null;
   reportedBy: string | null;
   handledBy: string | null;
-  metadata?: { archive?: { reason: string; at: string } } | null;
+  metadata?: { resolutionFormula?:PestFormula|null; archive?: { reason: string; at: string } } | null;
   reportedAt: string;
   handledAt: string | null;
   room: { id: string; name: string } | null;
-  batch: { id: string; name: string; strainName?: string | null } | null;
+  batch: { id: string; name: string; strainName?: string | null; startDate?: string | null } | null;
   device?: { id: string; name: string; type: string | null; status: string | null } | null;
   table: { id: string; name: string } | null;
   targetContext?: TargetContext | null;
