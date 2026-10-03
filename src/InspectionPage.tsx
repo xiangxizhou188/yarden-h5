@@ -14,7 +14,7 @@ type Report = {
   completedAt: string; startedAt: string; needsAttention: boolean; initialRequired: boolean;
   template: { steps: { key: StepKey; title: string; initial?: boolean }[] };
   beds: { id: string; name: string }[]; tank: { name: string; capacityGallons: number | null } | null;
-  rootFormula: { photos?:MediaAsset[]; name: string; version: number; rootParts: number; waterParts: number } | null;
+  rootFormula: { photos?:MediaAsset[]; name: string; version: number; rootParts: number; waterParts: number; rootUnit?: string | null; waterUnit?: string | null } | null;
   confirmations: Partial<Record<StepKey, string>>;
   state: { plants?:string; plantPhotos?:MediaAsset[]; plantBeds?:{bedId:string;photos:MediaAsset[]}[]; noIndependentAc?: boolean; moisture: string; setting: string; water: string; ph: string; beds: { bedId: string; photos: MediaAsset[] }[]; phPhotos: MediaAsset[]; lightPhotos: MediaAsset[]; climatePhotos: MediaAsset[] };
 };
@@ -54,5 +54,5 @@ function StepContent({ step, report }: { step: StepKey; report: Report }) {
   if (step === 'climate' && state.noIndependentAc === true) return <p>当前房间没有独控空调 · 已确认，无需设置照片</p>;
   if (step === 'climate') return <><p>已确认单控空调温度、湿度设置</p><PhotoGallery photos={state.climatePhotos} /></>;
   if (step === 'drippers') return <p>已确认每棵植物插有两根滴管</p>;
-  return <><p>已确认用清水与护根水浇透</p>{report.rootFormula && <div className="patrol-ratio"><strong>{report.rootFormula.name} · V{report.rootFormula.version}</strong><p>护根水 {report.rootFormula.rootParts} 份 : 清水 {report.rootFormula.waterParts} 份</p><PhotoGallery photos={report.rootFormula.photos || []}/></div>}</>;
+  return <><p>已确认用清水与护根水浇透</p>{report.rootFormula && <div className="patrol-ratio"><strong>{report.rootFormula.name} · V{report.rootFormula.version}</strong><p>护根水 {report.rootFormula.rootParts} {report.rootFormula.rootUnit || '份'} : 清水 {report.rootFormula.waterParts} {report.rootFormula.waterUnit || '份'}{(!report.rootFormula.rootUnit || !report.rootFormula.waterUnit) && '（单位未设置）'}</p><PhotoGallery photos={report.rootFormula.photos || []}/></div>}</>;
 }
