@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { request } from './api';
 import { PhotoGallery } from './photos';
-import { formatDateTime } from './format';
+import { formatDateTime, patrolLightScheduleText } from './format';
 import type { MediaAsset } from './types';
 import './patrol.css';
 
-type StepKey = 'moisture' | 'water' | 'ph' | 'plants' | 'lights' | 'climate' | 'drippers' | 'roots';
+type StepKey = 'moisture' | 'water' | 'ph' | 'plants' | 'lights' | 'lights_off' | 'climate' | 'drippers' | 'roots';
 type WateringSetting = {times?:{startTime:string;durationMinutes:number}[];startTime:string;durationMinutes:number;mode:string;intervalHours:number|null};
 const wateringText=(row:WateringSetting)=>row.mode==='timed' ? '每日 '+(row.times||[row]).length+' 次 · '+(row.times||[row]).map((t,i)=>`第 ${i+1} 次 ${t.startTime} · ${t.durationMinutes} 分钟`).join('；') : row.startTime+' 开始 · 每次 '+row.durationMinutes+' 分钟 · '+(row.mode==='cyclic'?'每 '+row.intervalHours+' 小时循环':'定时浇水');
 type Report = {
+  lightSchedule?: { onTime: string; offTime: string } | null;
+  lightCheck?: { date: string; offTime: string } | null;
   irrigationSnapshot?: {scope:string;batchDay:number|null;common:WateringSetting;beds:(WateringSetting & {bedId:string;bedName:string})[]};
   room: { name: string }; batch: { name: string }; inspectorName: string; businessDate: string;
   completedAt: string; startedAt: string; needsAttention: boolean; initialRequired: boolean;
@@ -16,7 +18,7 @@ type Report = {
   beds: { id: string; name: string }[]; tank: { name: string; capacityGallons: number | null } | null;
   rootFormula: { photos?:MediaAsset[]; name: string; version: number; rootParts: number; waterParts: number; rootUnit?: string | null; waterUnit?: string | null } | null;
   confirmations: Partial<Record<StepKey, string>>;
-  state: { plants?:string; plantPhotos?:MediaAsset[]; plantBeds?:{bedId:string;photos:MediaAsset[]}[]; noIndependentAc?: boolean; moisture: string; setting: string; water: string; ph: string; beds: { bedId: string; photos: MediaAsset[] }[]; phPhotos: MediaAsset[]; lightPhotos: MediaAsset[]; climatePhotos: MediaAsset[] };
+  state: { lightsOff?: string; plants?:string; plantPhotos?:MediaAsset[]; plantBeds?:{bedId:string;photos:MediaAsset[]}[]; noIndependentAc?: boolean; moisture: string; setting: string; water: string; ph: string; beds: { bedId: string; photos: MediaAsset[] }[]; phPhotos: MediaAsset[]; lightPhotos: MediaAsset[]; climatePhotos: MediaAsset[] };
 };
 type FollowUp = { needsAttention: boolean; findings: { key: string; title: string; status: string; issueStatus?: string | null; note: string | null; issueId: string | null }[]; timeline: { id: string; title: string; at: string; actorName: string; note?: string | null }[] };
 type Inspection = { followUp?: FollowUp | null; id: string; report: Report | null; inspectorName: string; recordedAt: string; attachments: MediaAsset[]; room: { name: string }; batch: { name: string } | null };
@@ -50,7 +52,8 @@ function StepContent({ step, report }: { step: StepKey; report: Report }) {
   if (step === 'water') return <><p>{report.tank?.name || '房间水桶'}{report.tank?.capacityGallons ? ` · ${report.tank.capacityGallons} gal` : ' · 档案待配置'}</p><p className={state.water === 'low' ? 'patrol-warning-text' : ''}>肥水{state.water === 'low' ? '不足 · 待关注' : '足够'}</p></>;
   if(step==='plants') return <><p>{state.plants==='abnormal'?'植物状态异常':'植物状态正常'}</p>{state.plants==='abnormal'?<PhotoGallery photos={state.plantPhotos || []}/>: (state.plantBeds || []).map(b=><div className="patrol-bed" key={b.bedId}><h3>{report.beds.find(bed=>bed.id===b.bedId)?.name || 'Table'}</h3><PhotoGallery photos={b.photos}/></div>)}</>;
   if (step === 'ph') return <><p className={state.ph === 'abnormal' ? 'patrol-warning-text' : ''}>pH {state.ph === 'abnormal' ? '不正常 · 待关注' : '正常'}</p><PhotoGallery photos={state.phPhotos} /></>;
-  if (step === 'lights') return <><p>已确认每日开灯 18 小时</p><PhotoGallery photos={state.lightPhotos} /></>;
+  if (step === 'lights') return <><p>{patrolLightScheduleText(report.lightSchedule)}</p><PhotoGallery photos={state.lightPhotos} /></>;
+  if (step === 'lights_off') return <><p className={state.lightsOff === 'on' ? 'patrol-warning-text' : ''}>{state.lightsOff === 'off' ? '肉眼确认：灯已关闭' : state.lightsOff === 'on' ? '肉眼确认：灯未关闭' : '未记录关灯检查结果'}</p>{report.lightCheck && <p>{report.lightCheck.date} 夜间 · 计划 {report.lightCheck.offTime} 关灯</p>}</>;
   if (step === 'climate' && state.noIndependentAc === true) return <p>当前房间没有独控空调 · 已确认，无需设置照片</p>;
   if (step === 'climate') return <><p>已确认单控空调温度、湿度设置</p><PhotoGallery photos={state.climatePhotos} /></>;
   if (step === 'drippers') return <p>已确认每棵植物插有两根滴管</p>;

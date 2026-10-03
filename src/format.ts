@@ -27,3 +27,8 @@ export function formatBatchStartDate(value?: string | null) {
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateKey) return '未记录';
   return new Intl.DateTimeFormat('zh-CN', { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' }).format(date);
 }
+export function patrolLightScheduleText(schedule: { onTime: string; offTime: string } | null | undefined): string {
+  if (schedule === undefined) return '已确认每日开灯 18 小时';
+  if (schedule === null) return '已确认现场灯光设置 · 当时尚未配置工厂时段';
+  return `已确认 ${schedule.onTime} 开灯 · ${schedule.offTime <= schedule.onTime ? '次日 ' : ''}${schedule.offTime} 关灯（工厂当地时间）`;
+}

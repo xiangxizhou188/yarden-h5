@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBatchStartDate, slotPosition, statusLabel } from './format';
+import { formatBatchStartDate, patrolLightScheduleText, slotPosition, statusLabel } from './format';
 
 describe('issue formatting', () => {
   it('translates workflow statuses', () => {
@@ -23,5 +23,17 @@ describe('batch move-in date', () => {
     expect(formatBatchStartDate(null)).toBe('未记录');
     expect(formatBatchStartDate('2026-02-30')).toBe('未记录');
     expect(formatBatchStartDate('bad')).toBe('未记录');
+  });
+});
+
+describe('historical patrol lighting', () => {
+  it('uses both snapshot times for daytime, overnight and midnight schedules', () => {
+    expect(patrolLightScheduleText({ onTime: '07:00', offTime: '19:00' })).toContain('07:00 开灯 · 19:00 关灯');
+    expect(patrolLightScheduleText({ onTime: '22:00', offTime: '06:00' })).toContain('22:00 开灯 · 次日 06:00 关灯');
+    expect(patrolLightScheduleText({ onTime: '08:00', offTime: '00:00' })).toContain('次日 00:00 关灯');
+  });
+  it('distinguishes legacy reports from an explicitly unconfigured schedule', () => {
+    expect(patrolLightScheduleText(undefined)).toBe('已确认每日开灯 18 小时');
+    expect(patrolLightScheduleText(null)).toContain('当时尚未配置');
   });
 });
