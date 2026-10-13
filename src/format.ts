@@ -32,3 +32,12 @@ export function patrolLightScheduleText(schedule: { onTime: string; offTime: str
   if (schedule === null) return '已确认现场灯光设置 · 当时尚未配置工厂时段';
   return `已确认 ${schedule.onTime} 开灯 · ${schedule.offTime <= schedule.onTime ? '次日 ' : ''}${schedule.offTime} 关灯（工厂当地时间）`;
 }
+
+export function distanceLabel(daysAway: number) {
+  return daysAway === 0 ? '今天' : daysAway < 0 ? `逾期${Math.abs(daysAway)}天` : `${daysAway}天`;
+}
+
+export function formatNurseryDate(value: string) {
+  const [year, month, day] = value.split('-');
+  return `${month}/${day}/${year.slice(-2)}`;
+}

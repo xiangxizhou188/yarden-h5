@@ -11,7 +11,7 @@
 .photo-viewer-nav button:disabled { opacity: .25; }
 .photo-uploader { display: grid; gap: 11px; }
 .photo-add-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.photo-add { min-height: 58px; border: 1px dashed #bdb2d2; border-radius: 14px; background: #faf8fd; color: #7134c6; font-weight: 800; }
-.photo-add.secondary { border-style: solid; background: #f3ecfd; }
+.photo-add { min-height: 58px; border: 1px dashed #bdb2d2; border-radius: 14px; background: #faf8fd; color: var(--brand-primary); font-weight: 800; }
+.photo-add.secondary { border-style: solid; background: var(--brand-subtle); }
 .photo-remove-row { display: flex; gap: 7px; overflow: auto; }
-.photo-remove-row button { white-space: nowrap; border: 0; border-radius: 99px; background: #f2edf7; color: #8650a9; padding: 7px 10px; font-size: 11px; }
+.photo-remove-row button { white-space: nowrap; border: 0; border-radius: 99px; background: var(--brand-subtle); color: var(--brand-primary); padding: 7px 10px; font-size: 12px; }

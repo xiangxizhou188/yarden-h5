@@ -6,8 +6,8 @@ import type { MediaAsset } from './types';
 import './patrol.css';
 
 type StepKey = 'moisture' | 'water' | 'ph' | 'plants' | 'lights' | 'lights_off' | 'climate' | 'drippers' | 'roots';
-type WateringSetting = {times?:{startTime:string;durationMinutes:number}[];startTime:string;durationMinutes:number;mode:string;intervalHours:number|null};
-const wateringText=(row:WateringSetting)=>row.mode==='timed' ? '每日 '+(row.times||[row]).length+' 次 · '+(row.times||[row]).map((t,i)=>`第 ${i+1} 次 ${t.startTime} · ${t.durationMinutes} 分钟`).join('；') : row.startTime+' 开始 · 每次 '+row.durationMinutes+' 分钟 · '+(row.mode==='cyclic'?'每 '+row.intervalHours+' 小时循环':'定时浇水');
+type WateringSetting = {times?:{method?:string;dayOffset?:number;waterTypeLabel?:string;startTime:string;durationMinutes:number}[];startTime:string;durationMinutes:number;mode:string;intervalHours:number|null};
+const wateringText=(row:WateringSetting)=>row.mode==='none'?'当天未浇水':row.mode==='cyclic'?`${row.startTime} 开始 · 每次 ${row.durationMinutes} 分钟 · 历史循环浇水`:(row.times||[row]).map((t,i)=>`第 ${i+1} 次 ${'method' in t&&t.method==='manual'?'手工 · 已浇':'定时'} ${'dayOffset' in t&&t.dayOffset?'次日 ':''}${t.startTime}${'method' in t&&t.method==='manual'?'':` · ${t.durationMinutes} 分钟`}${'waterTypeLabel' in t&&t.waterTypeLabel?` · ${t.waterTypeLabel}`:''}`).join('；');
 type Report = {
   lightSchedule?: { onTime: string; offTime: string } | null;
   lightCheck?: { date: string; offTime: string } | null;
@@ -21,7 +21,7 @@ type Report = {
   state: { lightsOff?: string; plants?:string; plantPhotos?:MediaAsset[]; plantBeds?:{bedId:string;photos:MediaAsset[]}[]; noIndependentAc?: boolean; moisture: string; setting: string; water: string; ph: string; beds: { bedId: string; photos: MediaAsset[] }[]; phPhotos: MediaAsset[]; lightPhotos: MediaAsset[]; climatePhotos: MediaAsset[] };
 };
 type FollowUp = { needsAttention: boolean; findings: { key: string; title: string; status: string; issueStatus?: string | null; note: string | null; issueId: string | null }[]; timeline: { id: string; title: string; at: string; actorName: string; note?: string | null }[] };
-type Inspection = { followUp?: FollowUp | null; id: string; report: Report | null; inspectorName: string; recordedAt: string; attachments: MediaAsset[]; room: { name: string }; batch: { name: string } | null };
+type Inspection = { followUp?: FollowUp | null; generatedIssues?: { id: string; title: string | null; issueSubtype: string; issueStatus?: string; status?: string | null }[]; id: string; report: Report | null; inspectorName: string; recordedAt: string; attachments: MediaAsset[]; room: { name: string }; batch: { name: string } | null };
 
 export function InspectionPage({ route, onLogout }: { route: { kind: 'patrol'; token: string } | { kind: 'inspection'; id: string }; onLogout?: () => void }) {
   const [record, setRecord] = useState<Inspection | null>(null);
@@ -35,11 +35,12 @@ export function InspectionPage({ route, onLogout }: { route: { kind: 'patrol'; t
   }, [route, attempt]);
   if (!record) return <main className="state-page"><div className="brand-mark"><img src="/yarden-brand-logo.png" alt="御花园" /></div><h1>{error ? '无法查看报告' : '正在加载巡房报告'}</h1><p>{error || '正在读取检查记录与现场照片…'}</p>{error && <button className="primary-button" onClick={() => { setError(''); setAttempt(n => n + 1); }}>重新加载</button>}{onLogout && <button className="patrol-link" onClick={onLogout}>切换账号</button>}</main>;
   const report = record.report;
-  const needsAttention = record.followUp?.needsAttention ?? report?.needsAttention;
+  const needsAttention = Boolean(record.followUp?.needsAttention || record.generatedIssues?.some(issue => ['OPEN', 'IN_PROGRESS'].includes(issue.status || issue.issueStatus || '')) || report?.needsAttention);
   return <main className="patrol-page"><header className="patrol-header"><div><strong>巡房报告</strong><small>YARDEN · 团队巡房记录</small></div>{onLogout ? <button className="patrol-link" onClick={onLogout}>退出</button> : <span className="patrol-link">分享只读</span>}</header>
     <section className="patrol-hero"><span>{report?.businessDate || formatDateTime(record.recordedAt)} · {report ? (report.initialRequired ? '首次巡房' : '日常巡房') : '巡房记录'}</span><h1>{record.room.name}</h1><p>{record.batch?.name || '历史巡房'}</p><strong>{needsAttention ? '已完成 · 有待关注项' : '已完成'}</strong><div>{record.inspectorName} · {formatDateTime(report?.completedAt || record.recordedAt)}</div></section>
     {report ? <><div className={needsAttention ? 'patrol-notice warning' : 'patrol-notice'}>{needsAttention ? '巡房发现待关注项，请查看下方处理记录。' : record.followUp?.findings.length ? '巡房关注项已处理，原始检查结果与处理过程保留如下。' : '本次检查已全部确认完成。'}{report.initialRequired && ' 已包含本批次初始检查。'}</div>
       {record.followUp?.findings.map(item => <section className="patrol-card" key={item.key}><h2>{item.title}</h2><p>{item.issueStatus === 'ARCHIVED' ? '已归档' : item.status === 'RESOLVED' ? '已解决' : item.status === 'REPORTED' ? '已上报异常 · 处理中' : '待关注'}</p>{item.note && <p>{item.note}</p>}{item.issueId && <small>已关联异常单</small>}</section>)}
+      {record.generatedIssues?.length ? <section className="patrol-card"><h2>本轮关联异常 · {record.generatedIssues.length}</h2>{record.generatedIssues.map(issue => <p key={issue.id}>{issue.title || issue.issueSubtype} · {(issue.status || issue.issueStatus) === 'RESOLVED' ? '已解决' : (issue.status || issue.issueStatus) === 'CLOSED' ? '已关闭' : (issue.status || issue.issueStatus) === 'IN_PROGRESS' ? '处理中' : (issue.status || issue.issueStatus) === 'ARCHIVED' ? '已归档' : '待处理'}</p>)}</section> : null}
       {report.template.steps.map((step, index) => <section className="patrol-card" key={step.key}><header><span className="patrol-number">{index + 1}</span><h2>{step.title.replace('两根滴灌', '两根滴管')}</h2><span className="patrol-check">✓</span></header>{step.initial && <span className="patrol-tag">批次初始检查</span>}<StepContent step={step.key} report={report} /><small className="patrol-time">确认完成 · {formatDateTime(report.confirmations[step.key] || report.completedAt)}</small></section>)}
     </> : <section className="patrol-card"><h2>历史巡房记录</h2><p>此记录使用旧版巡房格式。</p><PhotoGallery photos={record.attachments || []} /></section>}
     {record.followUp?.timeline.length ? <section className="patrol-card"><h2>巡房处理时间线</h2>{record.followUp.timeline.map(event => <div className="patrol-timeline-event" key={event.id}><strong>{event.title}</strong>{event.note && <p>{event.note}</p>}<small>{formatDateTime(event.at)} · {event.actorName || '处理人员'}</small></div>)}</section> : null}

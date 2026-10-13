@@ -79,7 +79,9 @@ async function proxyAuthenticated(request: Request, env: Env, backendPath: strin
   let accessToken = stored[ACCESS_COOKIE];
   if (!accessToken) return json({ success: false, message: '请先登录后继续' }, 401);
   const body = method === 'GET' ? undefined : bodyOverride ?? await request.text();
-  const init = { method, body: body || undefined, headers: request.headers.get('Idempotency-Key') ? { 'Idempotency-Key': request.headers.get('Idempotency-Key')! } : undefined };
+  const selectedHeaders: Record<string,string> = {};
+  for(const name of ['Idempotency-Key','X-Facility-Name']) { const value=request.headers.get(name);if(value)selectedHeaders[name]=value; }
+  const init = {method,body:body || undefined,headers:selectedHeaders};
   let result = await backend(env, backendPath, init, accessToken);
   let renewedSession: AuthSession | undefined;
   if (result.response.status === 401 && stored[REFRESH_COOKIE]) {
@@ -105,7 +107,7 @@ async function proxyMedia(request: Request, env: Env, backendPath: string) {
   const method = request.method.toUpperCase();
   const body = method === 'PUT' ? await request.arrayBuffer() : undefined;
   const selectedHeaders = new Headers();
-  selectedHeaders.set('X-Facility-Name', env.FACILITY_NAME);
+  // The caller supplies the record's workplace; the backend validates access.
   for (const name of ['Content-Type', 'X-Entity-Id', 'X-Facility-Name', 'X-File-Name', 'X-File-Size', 'X-Media-Scope']) {
     const value = request.headers.get(name);
     if (value) selectedHeaders.set(name, value);
@@ -143,9 +145,9 @@ async function proxyMedia(request: Request, env: Env, backendPath: string) {
 }
 
 async function login(request: Request, env: Env) {
-  const input = await request.json().catch(() => null) as { username?: string; password?: string } | null;
+  const input = await request.json().catch(() => null) as { username?: string; password?: string; facilityName?: string } | null;
   if (!input?.username?.trim() || !input.password) return json({ success: false, message: '请输入账号和密码' }, 400);
-  const { response, payload } = await backend<AuthSession>(env, '/auth/login', { method: 'POST', body: JSON.stringify({ username: input.username.trim(), password: input.password, facilityName: env.FACILITY_NAME, deviceName: 'Yarden H5' }) });
+  const { response, payload } = await backend<AuthSession>(env, '/auth/login', { method: 'POST', body: JSON.stringify({ username: input.username.trim(), password: input.password, facilityName: input.facilityName?.trim() || env.FACILITY_NAME, deviceName: 'Yarden H5' }) });
   if (!response.ok || !payload?.success || !payload.data) return json(payload ?? { success: false, message: '登录服务暂时不可用' }, response.status);
   const headers = new Headers({ 'Cache-Control': 'private, no-store', 'Content-Type': 'application/json' });
   headers.append('Set-Cookie', cookie(ACCESS_COOKIE, payload.data.accessToken, payload.data.expiresIn));
@@ -185,6 +187,18 @@ async function nurseryPage(request: Request, env: Env, token: string) {
   return new Response(html.replace(/<title>.*?<\/title>/, `<title>${safeText(preview.title)}</title>${metas}`), { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'public, max-age=60, s-maxage=300', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
 }
 
+async function laborPage(request: Request, env: Env, token: string, nursery: boolean) {
+  const { payload } = await backend<SharePreview>(env, nursery ? `/nursery-move-in-plan/shares/${encodeURIComponent(token)}/preview` : `/labor/plan-shares/${encodeURIComponent(token)}/preview`);
+  const preview = payload?.success && payload.data ? payload.data : { title: '御花园 · 排班计划', description: '查看最新排班日期与工作量', imageUrl: null };
+  if (nursery) { preview.title = '御花园 · 排班计划'; preview.description = '查看最新排班日期与工作量'; }
+  const assetResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+  const html = await assetResponse.text();
+  const canonical = new URL(`/labor/${nursery ? 'nursery/' : ''}${encodeURIComponent(token)}`, request.url).toString();
+  const image = preview.imageUrl || new URL('/share-logo.png', request.url).toString();
+  const metas = `<meta property="og:type" content="website"><meta property="og:title" content="${safeText(preview.title)}"><meta property="og:description" content="${safeText(preview.description)}"><meta property="og:image" content="${safeText(image)}"><meta property="og:url" content="${safeText(canonical)}"><meta name="twitter:card" content="summary_large_image">`;
+  return new Response(html.replace(/<title>.*?<\/title>/, `<title>${safeText(preview.title)}</title>${metas}`), { headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
+}
+
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
@@ -198,7 +212,22 @@ export default {
         return await proxyAuthenticated(request, env, `/care-formulas?${query}`);
       }
       if (url.pathname === '/api/session' && method === 'GET') return await proxyAuthenticated(request, env, '/auth/me');
+      if (url.pathname === '/api/labor-access' && method === 'GET') return await proxyAuthenticated(request, env, '/labor/arrangement-access');
+      const arrangement = url.pathname.match(/^\/api\/labor-shares\/(nursery\/)?([^/]+)\/items\/([^/]+)\/arrangement$/);
+      if (arrangement && method === 'POST') {
+        const token = encodeURIComponent(decodeURIComponent(arrangement[2])), id = encodeURIComponent(decodeURIComponent(arrangement[3]));
+        return await proxyAuthenticated(request, env, arrangement[1] ? `/nursery-move-in-plan/shares/${token}/labor/${id}/arrangement` : `/labor/plan-shares/${token}/items/${id}/arrangement`, 'POST');
+      }
+      const laborApi = url.pathname.match(/^\/api\/labor-shares\/(nursery\/)?([^/]+)$/);
+      if (laborApi && method === 'GET') {
+        const result = await backend(env, laborApi[1] ? `/nursery-move-in-plan/shares/${encodeURIComponent(laborApi[2])}/labor` : `/labor/plan-shares/${encodeURIComponent(laborApi[2])}`);
+        return json(result.payload || { success: false, message: '排班服务暂时不可用' }, result.response.status, { 'Cache-Control': 'no-store' });
+      }
+      const laborPageMatch = url.pathname.match(/^\/labor\/(nursery\/)?([^/]+)\/?$/);
+      if (laborPageMatch && method === 'GET') return await laborPage(request, env, laborPageMatch[2], Boolean(laborPageMatch[1]));
       const nurseryApi = url.pathname.match(/^\/api\/nursery-shares\/([^/]+)$/);
+      const nurseryConfirm = url.pathname.match(/^\/api\/nursery-shares\/([^/]+)\/items\/([^/]+)\/confirm$/);
+      if (nurseryConfirm && method === 'POST') return await proxyAuthenticated(request, env, `/nursery-move-in-plan/shares/${encodeURIComponent(nurseryConfirm[1])}/items/${encodeURIComponent(nurseryConfirm[2])}/confirm`, 'POST');
       if (nurseryApi && method === 'GET') {
         const result = await backend(env, `/nursery-move-in-plan/shares/${encodeURIComponent(nurseryApi[1])}`);
         return json(result.payload ?? { success: false, message: '计划服务暂时不可用' }, result.response.status, { 'Cache-Control': 'no-store' });

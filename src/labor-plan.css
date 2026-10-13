@@ -1,0 +1,22 @@
+.labor-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 0; text-align: center; overflow-wrap: anywhere; }
+.labor-cell small { color: #8C8793; font-size: 12px; line-height: 18px; }
+.labor-public-page .nursery-row > b small { display: block; }
+.labor-public-page .nursery-updated { padding-top: 16px; }
+
+.labor-public-page .nursery-table-head .labor-cell { gap: 0; padding: 4px 0; }
+.labor-public-page .nursery-table-head button { padding: 4px 0; }
+.labor-next { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 16px; padding: 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)); color: #FFFFFF; -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 24px rgba(15, 54, 89, 0.12); }
+.labor-next-copy { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; overflow-wrap: anywhere; }
+.labor-next h2 { color: #FFFFFF; font-size: 16px; line-height: 24px; font-weight: 600; margin: 0; }
+.labor-next p { font-size: 12px; line-height: 20px; margin: 0; }
+.labor-arrange-button { border: 0; border-radius: 999px; padding: 4px 16px; min-height: 0; line-height: 20px; background: var(--brand-primary); color: #FFFFFF; font-size: 14px; font-weight: 600; }
+.labor-arrange-button:disabled { opacity: 0.48; }
+.labor-next-note { flex-basis: 100%; color: #FFFFFF; }
+.labor-cell .labor-arranged { display: inline-block; align-self: center; border: 0; border-radius: 8px; padding: 0 8px; background: var(--brand-soft); color: var(--brand-primary); font-size: 12px; line-height: 16px; white-space: normal; }
+.labor-cell button.labor-arranged { min-height: 0; cursor: pointer; }
+
+.labor-public-page .nursery-table-head .labor-filter-active { color: var(--brand-primary); }
+.labor-date-input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 12px; background: #F5F5F7; border: 0; border-radius: 12px; color: #312C36; font: inherit; font-size: 14px; }
+
+.labor-people b { color: var(--brand-primary); font-size: 18px; line-height: 24px; }
+.labor-person-unit { font-size: 12px; }

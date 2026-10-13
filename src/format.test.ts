@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBatchStartDate, patrolLightScheduleText, slotPosition, statusLabel } from './format';
+import { formatNurseryDate, formatBatchStartDate, patrolLightScheduleText, slotPosition, statusLabel } from './format';
 
 describe('issue formatting', () => {
   it('translates workflow statuses', () => {
@@ -36,4 +36,9 @@ describe('historical patrol lighting', () => {
     expect(patrolLightScheduleText(undefined)).toBe('已确认每日开灯 18 小时');
     expect(patrolLightScheduleText(null)).toContain('当时尚未配置');
   });
+});
+
+it('formats nursery table and confirmation dates without timezone shifts', () => {
+  expect(formatNurseryDate('2026-10-12')).toBe('10/12/26');
+  expect(formatNurseryDate('2027-01-01')).toBe('01/01/27');
 });

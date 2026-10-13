@@ -1,7 +1,18 @@
 [
   "src/App.tsx",
+  "src/LoginPage.tsx",
+  "src/LoginDialog.tsx",
+  "src/NurseryConfirmationDialog.tsx",
+  "src/login-dialog.css",
+  "src/NurseryPlanPage.tsx",
+  "src/nursery-share.css",
   "src/InspectionPage.tsx",
   "src/api.ts",
   "src/patrol.css",
-  "src/types.ts"
+  "src/types.ts",
+  "src/NurseryFilterSheet.tsx",
+  "src/nursery-filter-sheet.css",
+  "src/LaborPlanPage.tsx",
+  "src/labor-plan.css",
+  "src/LaborArrangementDialog.tsx"
 ]

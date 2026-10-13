@@ -1,10 +1,32 @@
 /* Compact public plan header. Scoped selectors intentionally override the legacy
    shared-page rules without affecting inspection or patrol pages. */
+.nursery-due { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; }
+.nursery-due button { min-height: 28px; border: 0; border-radius: 18px; padding: 0 8px; background: var(--brand-primary); color: #fff; font-size: 12px; font-weight: 700; }
+.nursery-due button:disabled { opacity: .48; cursor: not-allowed; }
+.nursery-row-overdue .nursery-due > span { color: #B83D35; font-weight: 700; }
+.nursery-error { color: #B83D35; font-size: 13px; }
+.nursery-room { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 8px 0; }
+.nursery-facility { min-width: 0; font-size: 12px; line-height: 16px; overflow-wrap: anywhere; text-align: center; padding: 8px 0; }
+.nursery-page .nursery-table { margin-inline: -16px; border: 0; border-radius: 0; box-shadow: none; }
+.nursery-page .nursery-row { grid-template-columns: repeat(5, minmax(0, 1fr)); padding-inline: 12px; text-align: center; }
+.nursery-page .nursery-row.nursery-table-head > span { text-align: center; }
+.nursery-page .nursery-row > :last-child { justify-self: center; max-width: 100%; text-align: center; }
+.nursery-page .nursery-room { align-items: center; }
+.nursery-page .nursery-room strong { font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
+.nursery-page .nursery-due { text-align: center; color: #625d67; }
+.nursery-page .nursery-due > span { max-width: 100%; overflow-wrap: anywhere; }
+.nursery-page .nursery-row > b { color: var(--brand-primary); text-align: center; overflow-wrap: anywhere; }
+main.nursery-page {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(125deg, var(--brand-dark) 0%, var(--brand-primary) 54%, var(--brand-light) 100%);
+}
+
 .nursery-page .nursery-hero {
-  padding: 18px 18px 20px;
-  border-radius: 0 0 24px 24px;
-  background: linear-gradient(125deg, #159f9a 0%, #3475c7 54%, #6828d9 100%);
-  box-shadow: 0 10px 28px rgba(68, 50, 151, 0.16);
+  padding: 16px 16px 24px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .nursery-hero-inner {
@@ -21,8 +43,13 @@
 }
 
 .nursery-page .nursery-brand {
-  gap: 9px;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
+
+.nursery-page .nursery-brand > div { min-width: 0; }
+.nursery-page .nursery-brand > img { flex-shrink: 0; }
 
 .nursery-page .nursery-brand > img {
   width: 36px;
@@ -34,12 +61,14 @@
   object-fit: contain;
 }
 
-.nursery-page .nursery-brand strong {
+.nursery-page .nursery-brand h1 {
   display: block;
+  margin: 0;
   font-size: 18px;
   font-weight: 800;
   line-height: 20px;
   letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .nursery-page .nursery-brand small {
@@ -51,37 +80,9 @@
   opacity: 0.58;
 }
 
-.nursery-page .nursery-live {
-  float: none;
-  margin: 0;
-  padding: 6px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
-  font-size: 12px;
-}
-
-.nursery-hero-copy {
-  margin-top: 20px;
-}
-
-.nursery-page .nursery-hero h1 {
-  margin: 0;
-  font-size: clamp(25px, 7vw, 30px);
-  line-height: 1.2;
-  letter-spacing: -0.035em;
-}
-
-.nursery-page .nursery-hero p {
-  margin: 6px 0 0;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 12px;
-  line-height: 18px;
-}
-
 .nursery-page .nursery-summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 16px;
   padding: 0;
@@ -91,53 +92,75 @@
 .nursery-page .nursery-summary div {
   width: auto;
   min-width: 0;
-  min-height: 48px;
-  padding: 9px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.11);
+  min-height: 88px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  color: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 24px rgba(15, 54, 89, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
   display: flex;
-  flex-direction: row;
-  align-items: baseline;
-}
-
-.nursery-page .nursery-summary div + div {
-  border-left: 1px solid rgba(255, 255, 255, 0.13);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
 }
 
 .nursery-page .nursery-summary span {
-  flex: 1;
-  min-width: 0;
   margin: 0;
   font-size: 12px;
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .nursery-page .nursery-summary b {
-  overflow: hidden;
+  max-width: 100%;
   font-size: 20px;
   line-height: 24px;
-  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
   white-space: nowrap;
 }
 
 .nursery-page .nursery-summary small {
-  margin-left: 3px;
+  margin-left: 4px;
+  white-space: nowrap;
   font-size: 12px;
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .nursery-page .nursery-content {
-  padding-top: 18px;
+  width: 100%;
+  flex: 1;
+  padding: 0 16px 32px;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+  background: #FFFFFF;
 }
 
 @media (max-width: 430px) {
-  .nursery-page .nursery-hero {
-    padding-right: 16px;
-    padding-left: 16px;
-  }
-
-  .nursery-page .nursery-hero h1 {
-    font-size: 26px;
+  .nursery-page .nursery-summary b {
+    font-size: 16px;
+    line-height: 20px;
   }
 }
+
+.nursery-person { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 48px; max-width: 96px; min-height: 48px; padding: 4px; border: 0; background: transparent; color: #FFFFFF; }
+.nursery-person span { font-size: 12px; line-height: 16px; opacity: 0.72; overflow-wrap: anywhere; }
+
+
+
+.nursery-page .nursery-table-head { min-height: 64px; font-weight: 900; }
+
+.nursery-page .nursery-row.nursery-table-head > span { font-weight: 900; color: #29262c; }
+
+.nursery-header-entries { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.nursery-header-entries .nursery-person:disabled { opacity: 1; cursor: not-allowed; }
+.nursery-header-entries .nursery-person img { flex-shrink: 0; }
+
+.nursery-page .nursery-table-head button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 0; border: 0; background: transparent; color: #29262c; font-size: 12px; font-weight: 900; }
+.nursery-table-head button svg { flex-shrink: 0; }
+
+.nursery-header-entries a.nursery-person { text-decoration: none; }

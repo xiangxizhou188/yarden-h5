@@ -1,13 +1,17 @@
+import { LaborPlanPage } from './LaborPlanPage';
 import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError } from './api';
+import { api, ApiError, setFacilityContext } from './api';
 import { formatDateTime, formatBatchStartDate, severityLabels, slotPosition, statusLabel, typeLabels } from './format';
 import { PhotoGallery, PhotoUploader } from './photos';
 import type { Issue, MediaAsset, User } from './types';
 import { InspectionPage } from './InspectionPage';
+import { LoginPage } from './LoginPage';
 import { NurseryPlanPage } from './NurseryPlanPage';
 
-type Route = { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'patrol'; token: string } | { kind: 'nursery'; token: string } | { kind: 'inspection'; id: string } | { kind: 'unknown' };
+type Route = { kind: 'labor'; token: string; nursery: boolean } | { kind: 'share'; token: string } | { kind: 'issue'; id: string } | { kind: 'patrol'; token: string } | { kind: 'nursery'; token: string } | { kind: 'inspection'; id: string } | { kind: 'unknown' };
 function currentRoute(): Route {
+  const labor = location.pathname.match(/^\/labor\/(nursery\/)?([^/]+)\/?$/);
+  if (labor) return { kind: 'labor', token: decodeURIComponent(labor[2]), nursery: Boolean(labor[1]) };
   const nursery = location.pathname.match(/^\/nursery\/([^/]+)\/?$/);
   if (nursery) return { kind: 'nursery', token: decodeURIComponent(nursery[1]) };
   const patrol = location.pathname.match(/^\/p\/([^/]+)\/?$/);
@@ -30,6 +34,7 @@ export function App() {
     if (!requiresSession) return;
     api.session().then(setUser).catch(() => setUser(null)).finally(() => setCheckingSession(false));
   }, [requiresSession]);
+  if (route.kind === 'labor') return <LaborPlanPage token={route.token} nursery={route.nursery} />;
   if (route.kind === 'nursery') return <NurseryPlanPage token={route.token} />;
   if (route.kind === 'patrol') return <InspectionPage route={route} />;
   if (route.kind === 'share') return <IssuePage route={route} user={null} />;
@@ -40,23 +45,6 @@ export function App() {
   return <IssuePage route={route} user={user} onLogout={() => api.logout().finally(() => setUser(null))} />;
 }
 
-function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setError(''); setLoading(true);
-    try {
-      const user = await api.login(username.trim(), password);
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-      onLogin(user);
-    }
-    catch (caught) { setError(caught instanceof Error ? caught.message : '登录失败'); }
-    finally { setLoading(false); }
-  };
-  return <main className="login-shell"><section className="login-card"><div className="brand-mark"><img src="/yarden-brand-logo.png" alt="御花园" /></div><p className="eyebrow">YARDEN TEAM</p><h1>登录后查看记录</h1><p className="muted">记录仅对获得授权的团队成员开放</p><form onSubmit={submit}><label>账号<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="请输入账号" /></label><label>密码<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" /></label>{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={loading || !username.trim() || !password}>{loading ? '正在登录…' : '登录并继续'}</button></form><p className="security-note">🔒 账号验证由 Yarden 安全服务完成</p></section></main>;
-}
 
 function IssuePage({ route, user, onLogout }: { route: Extract<Route, { kind: 'share' | 'issue' }>; user: User | null; onLogout?: () => void }) {
   const [issue, setIssue] = useState<Issue | null>(null);
@@ -85,14 +73,15 @@ function IssuePage({ route, user, onLogout }: { route: Extract<Route, { kind: 's
 
 function IssueDetail({ issue, user, onChanged, onLogout }: { issue: Issue; user: User | null; onChanged: (issue: Issue) => void; onLogout?: () => void }) {
   const [pestFormulas, setPestFormulas] = useState<import('./types').PestFormula[]>([]);
+  useEffect(()=>{setFacilityContext(issue.facilityName);return ()=>setFacilityContext('');},[issue.facilityName]);
   const [formulaId, setFormulaId] = useState('');
   const [formulaError, setFormulaError] = useState('');
   useEffect(()=>{
     if (!user || issue.issueType!=='PEST' || issue.issueStatus!=='IN_PROGRESS') return;
     let active=true;
-    api.pestFormulas(user.facilityName).then(items=>{if(active)setPestFormulas(items.filter(item=>item.isActive&&['SPIDER','APHID','PEST_CONTROL'].includes(item.sprayUsageType||'')));}).catch(error=>{if(active)setFormulaError(error instanceof Error?error.message:'配方加载失败');});
+    api.pestFormulas(issue.facilityName).then(items=>{if(active)setPestFormulas(items.filter(item=>item.isActive&&['SPIDER','APHID','PEST_CONTROL'].includes(item.sprayUsageType||'')));}).catch(error=>{if(active)setFormulaError(error instanceof Error?error.message:'配方加载失败');});
     return ()=>{active=false;};
-  },[user,issue.issueType,issue.issueStatus]);
+  },[user,issue.facilityName,issue.issueType,issue.issueStatus]);
   const [solution, setSolution] = useState(issue.resolutionDescription || issue.actionTaken || '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -100,7 +89,7 @@ function IssueDetail({ issue, user, onChanged, onLogout }: { issue: Issue; user:
   const archived = issue.issueStatus === 'ARCHIVED';
   const resolved = archived || issue.issueStatus === 'RESOLVED' || issue.issueStatus === 'CLOSED';
   const readOnly = !user;
-  const context = issue.targetContext ?? { source: 'CURRENT' as const, capturedAt: issue.reportedAt, room: issue.room ? { ...issue.room, facilityName: user?.facilityName ?? null } : null, batch: issue.batch ? { id: issue.batch.id, name: issue.batch.name, strainName: issue.batch.strainName ?? null, startDate: issue.batch.startDate, status: null } : null, device: issue.device ? { ...issue.device } : null, table: issue.table ? { ...issue.table, roomId: issue.room?.id ?? null } : null, slots: [] };
+  const context = issue.targetContext ?? { source: 'CURRENT' as const, capturedAt: issue.reportedAt, room: issue.room ? { ...issue.room, facilityName: issue.facilityName } : null, batch: issue.batch ? { id: issue.batch.id, name: issue.batch.name, strainName: issue.batch.strainName ?? null, startDate: issue.batch.startDate, status: null } : null, device: issue.device ? { ...issue.device } : null, table: issue.table ? { ...issue.table, roomId: issue.room?.id ?? null } : null, slots: [] };
   const targetName = [context.room?.name, context.table?.name, context.device?.name].filter(Boolean).join(' · ') || '未关联';
   const batchStartDate = context.batch?.startDate || issue.batch?.startDate;
   const reportPhotos = (issue.attachments || []).filter(photo => photo.scope !== 'ISSUE_RESOLUTION');
@@ -121,7 +110,7 @@ function IssueDetail({ issue, user, onChanged, onLogout }: { issue: Issue; user:
     <section className={`hero ${issue.severity === 'CRITICAL' || issue.severity === 'HIGH' ? 'hero-danger' : ''}`}><div className="hero-top"><span className="glass-pill">⚠ {typeLabels[issue.issueType] || issue.issueType}</span><span className="severity-pill">{issue.severity ? severityLabels[issue.severity] : '未分级'}</span></div><h2>{issue.title || `${issue.room?.name || '未关联房间'}${typeLabels[issue.issueType] || '异常'}`}</h2><div className="hero-context"><div><span>异常对象</span><strong>{targetName}</strong></div><div><span>进树日期</span><strong>{formatBatchStartDate(batchStartDate)}</strong></div></div>{context.slots.length > 0 && <div className="plants"><div className="plants-head"><strong>♧ 涉及植物</strong><span>已选择 {context.slots.length} 株</span></div><div className="plant-grid">{context.slots.slice(0, 12).map(slot => <div className="plant" key={slot.id}><b>{slotPosition(slot)}</b><span>{slot.varietyName || '品种未记录'}</span><small>{slot.plantStatus || '状态未记录'}</small></div>)}</div></div>}<div className="hero-footer"><span>上报于 {formatDateTime(issue.reportedAt)}</span><span className="status"><i />{statusLabel(issue.issueStatus)}</span></div></section>
 
     <SectionTitle icon="≡" title="问题描述" /><section className="card description">{issue.description || '未填写问题描述'}</section>
-    <SectionTitle icon="◷" title="处理记录" /><section className="card timeline"><Timeline active title="异常已上报" meta={`${issue.reportedBy || '系统自动上报'} · ${formatDateTime(issue.reportedAt)}`} />{archived && issue.handledBy ? <Timeline active title="归档前处理人已接单" meta={issue.handledBy + ' · ' + formatDateTime(issue.handledAt)} /> : null}<Timeline active={issue.issueStatus !== 'OPEN'} title={archived ? '批次进入干房，异常已归档' : resolved ? '已确认并完成处理' : issue.issueStatus === 'IN_PROGRESS' ? '处理人已接单' : '等待处理人确认'} meta={archived ? `${issue.metadata?.archive?.reason || '批次种植阶段结束'} · ${formatDateTime(issue.metadata?.archive?.at)}` : issue.handledBy ? `${issue.handledBy}${issue.handledAt ? ` · ${formatDateTime(issue.handledAt)}` : ''}` : '尚未分配处理人'} last /></section>
+    <SectionTitle icon="◷" title="处理记录" /><section className="card timeline"><Timeline active title="异常已上报" meta={`${issue.reportedBy || '系统自动上报'} · ${formatDateTime(issue.reportedAt)}`} />{archived && issue.handledBy ? <Timeline active title="归档前处理人已接单" meta={issue.handledBy + ' · ' + formatDateTime(issue.acknowledgedAt || issue.handledAt)} /> : null}<Timeline active={issue.issueStatus !== 'OPEN'} title={archived ? '批次进入干房，异常已归档' : resolved ? '已确认并完成处理' : issue.issueStatus === 'IN_PROGRESS' ? '处理人已接单' : '等待处理人确认'} meta={archived ? `${issue.metadata?.archive?.reason || '批次种植阶段结束'} · ${formatDateTime(issue.metadata?.archive?.at)}` : issue.handledBy ? `${issue.handledBy}${(resolved ? issue.resolvedAt || issue.handledAt : issue.acknowledgedAt || issue.handledAt) ? ` · ${formatDateTime(resolved ? issue.resolvedAt || issue.handledAt : issue.acknowledgedAt || issue.handledAt)}` : ''}` : '尚未分配处理人'} last /></section>
     <SectionTitle icon="✓" title={archived ? '归档前处理记录' : resolved ? '处理结果' : '解决方案'} /><section className="card"><textarea disabled={readOnly || resolved} value={solution} onChange={(event) => setSolution(event.target.value)} placeholder="请描述排查过程、根因、处理措施和最终结果" />{message && <p className="inline-message">{message}</p>}</section>
     {issue.issueType==='PEST'?<><SectionTitle icon="⚗" title={readOnly||resolved?'关联杀虫配方':'杀虫配方（选填）'}/><section className="card">{readOnly||resolved?<p>{issue.metadata?.resolutionFormula?`${issue.metadata.resolutionFormula.name} · V${issue.metadata.resolutionFormula.version}`:'未关联杀虫配方'}</p>:<><p>轻微异常可不打药，记录处理方式即可。</p>{issue.issueStatus==='IN_PROGRESS'?<><select aria-label="杀虫配方（选填）" value={formulaId} onChange={event=>setFormulaId(event.target.value)}><option value="">不使用配方</option>{pestFormulas.map(formula=><option key={formula.id} value={formula.id}>{formula.name} · V{formula.version}</option>)}</select>{formulaError?<p className="inline-message">{formulaError}</p>:null}</>:null}</>}</section></>:null}
     <SectionTitle icon="▣" title="现场与处理照片" />{readOnly || resolved ? <section className="card photo-card">{allPhotos.length ? <PhotoGallery photos={allPhotos} /> : <p className="photo-empty">该异常没有上传照片</p>}</section> : <>{reportPhotos.length ? <section className="card photo-card"><h4>上报现场</h4><PhotoGallery photos={reportPhotos} /></section> : null}{issue.issueStatus === 'IN_PROGRESS' ? <section className="card photo-card"><h4>处理过程与结果</h4>{savedResolutionPhotos.length ? <PhotoGallery photos={savedResolutionPhotos} /> : null}<PhotoUploader value={resolutionPhotos} onChange={setResolutionPhotos} scope="ISSUE_RESOLUTION" entityId={issue.id} /></section> : <section className="card photo-card"><p className="photo-empty">确认处理后可上传处理照片</p></section>}</>}

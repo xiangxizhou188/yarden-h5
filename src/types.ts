@@ -24,6 +24,7 @@ export type TargetContext = {
 export type PestFormula = { id:string; name:string; version:number; isActive?:boolean; sprayUsageType?:string|null; sprayIngredients?:{name:string;amount:number;unit:string}[] };
 
 export type Issue = {
+  facilityName: string;
   id: string;
   issueStatus: IssueStatus;
   description: string;
@@ -38,6 +39,8 @@ export type Issue = {
   metadata?: { resolutionFormula?:PestFormula|null; archive?: { reason: string; at: string } } | null;
   reportedAt: string;
   handledAt: string | null;
+  acknowledgedAt?: string | null;
+  resolvedAt?: string | null;
   room: { id: string; name: string } | null;
   batch: { id: string; name: string; strainName?: string | null; startDate?: string | null } | null;
   device?: { id: string; name: string; type: string | null; status: string | null } | null;
@@ -60,16 +63,21 @@ export type MediaAsset = {
   createdAt: string;
 };
 
-export type User = { id: string; username: string; facilityName: string; role: string };
+export type User = { id: string; displayName?: string; username: string; facilityName: string; role: string };
 export type ApiResult<T> = { success: boolean; data?: T; message?: string };
 
 export type NurseryMoveInPlan = {
   title: string;
   facilityName: string;
+  groupName?: string | null;
+  facilities?: { facilityName: string; displayName: string }[];
   rangeDays: number;
   generatedAt: string;
   expiresAt: string | null;
   roomCount: number;
   totalQuantity: number;
-  items: { id: string; roomName: string; moveInDate: string; daysAway: number; quantity: number }[];
+  items: { id: string; roomId: string; roomName: string; facilityName?: string; facilityDisplayName?: string; moveInDate: string; daysAway: number; quantity: number }[];
 };
+
+export type LaborPlanItem = {arranged:boolean;arrangedAt:string|null;version:number;id:string;roomId:string;roomName:string;facilityName:string;facilityDisplayName:string;batchName:string;taskName:string;teamId?:string|null;teamName?:string|null;plannedDate:string;cultivationDay?:number|null;daysAway:number;quantity:number;totalMinutes:number;totalHours:number;people:number};
+export type LaborPlan = {groupName:string;rangeDays:number;generatedAt:string;facilities:{facilityName:string;displayName:string}[];items:LaborPlanItem[]};
